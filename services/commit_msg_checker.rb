@@ -57,7 +57,7 @@ class Service::CommitMsgChecker < Service
       payload['commits'] = ccommits
 
       # render email message with template
-      content = tpl.render 'event' => payload
+      content = tpl.render('event' => payload)
       
       # send notification to committer + configured recipients
       deliver_message([committer], cc, subj, content)
@@ -95,6 +95,49 @@ class Service::CommitMsgChecker < Service
 
   def mail_configured?
     defined?(@@mail_configured) && @@mail_configured
+  end
+
+  def smtp_address
+    @smtp_address ||= email_config['address']
+  end
+  def smtp_port
+    @smtp_port ||= (email_config['port'] || 25).to_i
+  end
+
+  def smtp_domain
+    @smtp_domain ||= email_config['domain'] || 'localhost.localdomain'
+  end
+
+  def smtp_authentication
+    @smtp_authentication ||= email_config['authentication']
+  end
+
+  def smtp_user_name
+    @smtp_user_name ||= email_config['user_name']
+  end
+
+  def smtp_password
+    @smtp_password ||= email_config['password']
+  end
+
+  def smtp_enable_starttls_auto?
+    @smtp_enable_starttls_auto ||= (email_config['enable_starttls_auto'] && true)
+  end
+
+  def smtp_openssl_verify_mode
+    @smtp_openssl_verify_mode ||= email_config['openssl_verify_mode']
+  end
+
+  def noreply_address
+    @noreply_address ||= email_config['noreply_address'] || "GitHub <noreply@github.com>"
+  end
+
+  def mail_from
+    send_from_author? ? author_address : noreply_address
+  end
+
+  def secret_header
+    {"secret" => "abc"} # FIXME
   end
 
   def mail_message(to, cc, subject, body)
