@@ -100,6 +100,7 @@ class Service::CommitMsgChecker < Service
   def smtp_address
     @smtp_address ||= email_config['address']
   end
+
   def smtp_port
     @smtp_port ||= (email_config['port'] || 25).to_i
   end
@@ -133,7 +134,7 @@ class Service::CommitMsgChecker < Service
   end
 
   def mail_from
-    send_from_author? ? author_address : noreply_address
+    noreply_address
   end
 
   def secret_header
