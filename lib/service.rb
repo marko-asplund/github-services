@@ -131,6 +131,19 @@ class Service
       end
     end
 
+    ALL_EVENTS = %w[
+      commit_comment create delete download follow fork fork_apply gist gollum
+      issue_comment issues member public pull_request push team_add watch
+      pull_request_review_comment status
+    ].sort
+
+    # Gets a list of events support by the service. Should be a superset of
+    # default_events.
+    def supported_events
+      return ALL_EVENTS.dup if method_defined? :receive_event
+      ALL_EVENTS.select { |event| method_defined? "receive_#{event}" }
+    end
+
     # Gets the current schema for the data attributes that this Service
     # expects.  This schema is used to generate the GitHub repository admin
     # interface.  The attribute types loosely to HTML input elements.
@@ -344,8 +357,11 @@ class Service
     # Returns nothing.
     def inherited(svc)
       Service.services << svc
-      Service::App.service(svc)
       super
+    end
+
+    def setup_for(app)
+      app.service(self)
     end
   end
 

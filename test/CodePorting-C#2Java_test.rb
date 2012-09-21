@@ -20,17 +20,17 @@ class CodePortingCSharp2JavaTest < Service::TestCase
       assert_equal 'TestJava', form['TarRepoKey']
       assert_equal 'codeportingtest', form['Username']
       assert_equal 'testpassword', form['Password']
-      assert_equal 'CodePorting', form['GithubUserId']
+      assert_equal '0314adcacbb895bd52f3bc6f2f361ebac3ffbfb6', form['GithubAccessToken']
       [200, {}, %(<xml><return success="True"></return></xml>)]
     end
 
     svc = service({'project_name' => 'Test_Project',
       'repo_key' => 'Test',
       'target_repo_key' => 'TestJava',
-      'username' => 'codeportingtest',
-      'password' => 'testpassword',
+      'codeporting_username' => 'codeportingtest',
+      'codeporting_password' => 'testpassword',
       'active' => '1',
-      'userid' => 'CodePorting'}, payload)
+      'github_access_token' => '0314adcacbb895bd52f3bc6f2f361ebac3ffbfb6'}, payload)
 
     assert_equal 3, payload['commits'].size
     assert_equal "True", svc.receive_push
@@ -40,4 +40,3 @@ class CodePortingCSharp2JavaTest < Service::TestCase
     super Service::CodePortingCSharp2Java, *args
   end
 end
-

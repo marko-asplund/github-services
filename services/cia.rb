@@ -1,7 +1,7 @@
 class Service::CIA < Service
-  string :address, :project, :branch
-  boolean :long_url
-  white_list :address, :project, :branch
+  string :address, :project, :branch, :module
+  boolean :long_url, :full_commits
+  white_list :address, :project, :branch, :module
 
   def receive_push
     repository =
@@ -18,15 +18,17 @@ class Service::CIA < Service
         ref_name
       end
 
+    module_name = data['module'].to_s
+
     commits = payload['commits']
 
     if commits.size > 5
-      message = build_cia_commit(repository, branch, payload['after'], commits.last, commits.size - 1)
+      message = build_cia_commit(repository, branch, payload['after'], commits.last, module_name, commits.size - 1)
       deliver(message)
     else
       commits.each do |commit|
         sha1 = commit['id']
-        message = build_cia_commit(repository, branch, sha1, commit)
+        message = build_cia_commit(repository, branch, sha1, commit, module_name)
         deliver(message)
       end
     end
@@ -40,7 +42,7 @@ class Service::CIA < Service
           address : 'http://cia.vc')
     end
   end
-  
+
   def deliver(message)
     xmlrpc_server.call("hub.deliver", message)
   rescue StandardError => err
@@ -51,8 +53,9 @@ class Service::CIA < Service
     end
   end
 
-  def build_cia_commit(repository, branch, sha1, commit, size = 1)
-    log = commit['message']
+  def build_cia_commit(repository, branch, sha1, commit, module_name, size = 1)
+    log_lines = commit['message'].split("\n")
+    log = log_lines.shift
     log << " (+#{size} more commits...)" if size > 1
 
     dt         = DateTime.parse(commit['timestamp']).new_offset
@@ -61,6 +64,12 @@ class Service::CIA < Service
     tiny_url   = data['long_url'].to_i == 1 ? commit['url'] : shorten_url(commit['url'])
 
     log << " - #{tiny_url}"
+
+    if data['full_commits'].to_i == 1
+      log_lines.each do |log_line|
+        log << "\n" << log_line
+      end
+    end
 
     <<-MSG
       <message>
@@ -72,6 +81,7 @@ class Service::CIA < Service
         <source>
           <project>#{repository}</project>
           <branch>#{branch}</branch>
+          <module>#{module_name}</module>
         </source>
         <timestamp>#{timestamp}</timestamp>
         <body>
